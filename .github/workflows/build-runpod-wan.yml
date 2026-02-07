@@ -7,18 +7,15 @@ on:
       - 'runpod/**'
       - 'wan/**'
       - 'requirements*.txt'
+      - '.github/workflows/build-runpod-wan.yml'
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-runpod
+  DOCKERHUB_IMAGE: willflyadmin/wan2.2-runpod
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout repository
@@ -36,21 +33,11 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Log in to Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -58,8 +45,9 @@ jobs:
           context: .
           file: ./runpod/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE }}:latest
+            ${{ env.DOCKERHUB_IMAGE }}:sha-${{ github.sha }}
 
       # RunPod 자동 배포
       - name: Deploy to RunPod
@@ -67,10 +55,9 @@ jobs:
           RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
           RUNPOD_ENDPOINT_ID: ${{ secrets.RUNPOD_ENDPOINT_ID }}
         run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}"
+          IMAGE_TAG="${{ env.DOCKERHUB_IMAGE }}:sha-${{ github.sha }}"
           echo "Deploying image: $IMAGE_TAG"
 
-          # Endpoint에서 Template ID 조회
           echo "Fetching endpoint details..."
           ENDPOINT_RESPONSE=$(curl -s "https://rest.runpod.io/v1/endpoints/${RUNPOD_ENDPOINT_ID}" \
             -H "Authorization: Bearer ${RUNPOD_API_KEY}")
@@ -85,7 +72,6 @@ jobs:
 
           echo "Found template ID: $TEMPLATE_ID"
 
-          # Template 이미지 업데이트 (롤링 릴리스)
           echo "Updating template image..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH "https://rest.runpod.io/v1/templates/${TEMPLATE_ID}" \
             -H "Authorization: Bearer ${RUNPOD_API_KEY}" \
