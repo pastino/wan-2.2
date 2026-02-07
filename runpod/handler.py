@@ -260,7 +260,7 @@ def generate_t2v(pipeline, job_input: dict, cfg) -> torch.Tensor:
         sampling_steps=sample_steps,
         guide_scale=sample_guide_scale,
         seed=seed,
-        offload_model=False,
+        offload_model=True,
     )
     return video
 
@@ -293,7 +293,7 @@ def generate_i2v(pipeline, job_input: dict, cfg) -> torch.Tensor:
         sampling_steps=sample_steps,
         guide_scale=sample_guide_scale,
         seed=seed,
-        offload_model=False,
+        offload_model=True,
     )
     return video
 
@@ -327,7 +327,7 @@ def generate_ti2v(pipeline, job_input: dict, cfg) -> torch.Tensor:
         sampling_steps=sample_steps,
         guide_scale=sample_guide_scale,
         seed=seed,
-        offload_model=False,
+        offload_model=True,
     )
     return video
 
@@ -366,7 +366,7 @@ def generate_s2v(pipeline, job_input: dict, cfg) -> tuple:
         sampling_steps=sample_steps,
         guide_scale=sample_guide_scale,
         seed=seed,
-        offload_model=False,
+        offload_model=True,
     )
     return video, audio_path
 
@@ -399,7 +399,7 @@ def generate_animate(pipeline, job_input: dict, cfg) -> torch.Tensor:
         sampling_steps=sample_steps,
         guide_scale=sample_guide_scale,
         seed=seed,
-        offload_model=False,
+        offload_model=True,
     )
     return video
 
