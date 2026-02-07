@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# GPU 아키텍처 지정 (CI에서 GPU 없이 CUDA 확장 컴파일 시 필요)
+# A100=8.0, H100=9.0
+ENV TORCH_CUDA_ARCH_LIST="8.0;9.0"
+
 # pip 업그레이드
 RUN pip install --upgrade pip
 
