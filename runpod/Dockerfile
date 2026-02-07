@@ -15,9 +15,10 @@ RUN apt-get update && apt-get install -y \
 # pip 업그레이드
 RUN pip install --upgrade pip
 
-# Wan2.2 기본 의존성 설치 (레이어 캐시 활용)
+# Wan2.2 기본 의존성 설치 (flash_attn은 torch 의존성 때문에 별도 설치)
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+RUN grep -v "flash_attn" /app/requirements.txt > /app/requirements_no_flash.txt && \
+    pip install -r /app/requirements_no_flash.txt
 
 # S2V 추가 의존성
 COPY requirements_s2v.txt /app/requirements_s2v.txt
