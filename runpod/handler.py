@@ -179,7 +179,7 @@ def load_pipeline(task: str):
             t5_fsdp=False,
             dit_fsdp=False,
             use_sp=False,
-            t5_cpu=False,
+            t5_cpu=True,
         )
     elif task == "i2v":
         pipeline = wan.WanI2V(
@@ -190,7 +190,7 @@ def load_pipeline(task: str):
             t5_fsdp=False,
             dit_fsdp=False,
             use_sp=False,
-            t5_cpu=False,
+            t5_cpu=True,
         )
     elif task == "ti2v":
         pipeline = wan.WanTI2V(
@@ -201,7 +201,7 @@ def load_pipeline(task: str):
             t5_fsdp=False,
             dit_fsdp=False,
             use_sp=False,
-            t5_cpu=False,
+            t5_cpu=True,
         )
     elif task == "s2v":
         pipeline = wan.WanS2V(
@@ -212,7 +212,7 @@ def load_pipeline(task: str):
             t5_fsdp=False,
             dit_fsdp=False,
             use_sp=False,
-            t5_cpu=False,
+            t5_cpu=True,
         )
     elif task == "animate":
         pipeline = wan.WanAnimate(
@@ -223,7 +223,7 @@ def load_pipeline(task: str):
             t5_fsdp=False,
             dit_fsdp=False,
             use_sp=False,
-            t5_cpu=False,
+            t5_cpu=True,
         )
     else:
         raise ValueError(f"지원하지 않는 task: {task}")

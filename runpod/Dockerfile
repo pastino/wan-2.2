@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 # A100=8.0, H100=9.0
 ENV TORCH_CUDA_ARCH_LIST="8.0;9.0"
 
+# GPU 메모리 단편화 방지 (80GB에서 14B 모델 사용 시 필요)
+ENV PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 # pip 업그레이드
 RUN pip install --upgrade pip
 
