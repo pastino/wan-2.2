@@ -1,0 +1,12 @@
+.git
+.github
+.DS_Store
+.gitignore
+.dockerignore
+assets/
+examples/
+tests/
+*.md
+LICENSE.txt
+Makefile
+pyproject.toml
