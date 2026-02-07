@@ -65,7 +65,7 @@ jobs:
       - name: Deploy to RunPod
         env:
           RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
-          RUNPOD_ENDPOINT_ID: ${{ secrets.RUNPOD_WAN_ENDPOINT_ID }}
+          RUNPOD_ENDPOINT_ID: ${{ secrets.RUNPOD_ENDPOINT_ID }}
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}"
           echo "Deploying image: $IMAGE_TAG"
