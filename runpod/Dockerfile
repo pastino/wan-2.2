@@ -24,9 +24,11 @@ RUN grep -v "flash_attn" /app/requirements.txt > /app/requirements_no_flash.txt 
 COPY requirements_s2v.txt /app/requirements_s2v.txt
 RUN pip install -r /app/requirements_s2v.txt
 
-# Animate 추가 의존성
+# Animate 추가 의존성 (SAM-2는 editable 설치 불가 → 별도 처리)
 COPY requirements_animate.txt /app/requirements_animate.txt
-RUN pip install -r /app/requirements_animate.txt
+RUN grep -v "sam2" /app/requirements_animate.txt > /app/requirements_animate_no_sam.txt && \
+    pip install -r /app/requirements_animate_no_sam.txt && \
+    pip install git+https://github.com/facebookresearch/sam2.git@0e78a118995e66bb27d78518c4bd9a3e95b4e266
 
 # flash-attn 별도 설치 (빌드 격리 비활성화 필요)
 RUN pip install flash-attn --no-build-isolation
