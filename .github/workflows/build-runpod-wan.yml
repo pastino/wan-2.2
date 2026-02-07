@@ -1,0 +1,105 @@
+name: Build Wan2.2 RunPod Docker Image
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'runpod/**'
+      - 'wan/**'
+      - 'requirements*.txt'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-runpod
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 디스크 공간 확보 - CUDA/PyTorch 이미지가 크기 때문에 필요
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./runpod/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # RunPod 자동 배포
+      - name: Deploy to RunPod
+        env:
+          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+          RUNPOD_ENDPOINT_ID: ${{ secrets.RUNPOD_WAN_ENDPOINT_ID }}
+        run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}"
+          echo "Deploying image: $IMAGE_TAG"
+
+          # Endpoint에서 Template ID 조회
+          echo "Fetching endpoint details..."
+          ENDPOINT_RESPONSE=$(curl -s "https://rest.runpod.io/v1/endpoints/${RUNPOD_ENDPOINT_ID}" \
+            -H "Authorization: Bearer ${RUNPOD_API_KEY}")
+
+          TEMPLATE_ID=$(echo "$ENDPOINT_RESPONSE" | jq -r '.templateId // empty')
+
+          if [ -z "$TEMPLATE_ID" ]; then
+            echo "Failed to get template ID from endpoint"
+            echo "Response: $ENDPOINT_RESPONSE"
+            exit 1
+          fi
+
+          echo "Found template ID: $TEMPLATE_ID"
+
+          # Template 이미지 업데이트 (롤링 릴리스)
+          echo "Updating template image..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH "https://rest.runpod.io/v1/templates/${TEMPLATE_ID}" \
+            -H "Authorization: Bearer ${RUNPOD_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"imageName\": \"${IMAGE_TAG}\"}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "RunPod template updated successfully (HTTP $HTTP_CODE)"
+            echo "Rolling release triggered"
+          else
+            echo "Failed to update RunPod template (HTTP $HTTP_CODE)"
+            echo "Response: $BODY"
+            exit 1
+          fi
